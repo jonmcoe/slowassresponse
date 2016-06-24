@@ -1,6 +1,6 @@
 import os
-import time
 
+from tornado import gen
 import tornado.ioloop
 import tornado.web
 
@@ -9,21 +9,26 @@ DEFAULT_PAUSE = 5
 
 
 class MainHandler(tornado.web.RequestHandler):
-    def get(self, t=None):
-        self.finish({"waited": self._safe_sleep(t)})
 
+    @gen.coroutine
+    def get(self, t=None):
+        t = self._parse(t)
+        yield gen.sleep(t)
+        self.finish({"waited": t})
+
+    @gen.coroutine
     def post(self, t=None):
-        self._safe_sleep(t)
+        t = self._parse(t)
+        yield gen.sleep(t)
         self.finish(self.request.body)
 
-    def _safe_sleep(self, t):
+    @staticmethod
+    def _parse(t):
         try:
             t = float(t)
         except:
             t = DEFAULT_PAUSE
-        time.sleep(t)
         return t
-
 
 def make_app():
     return tornado.web.Application([
